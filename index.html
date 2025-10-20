@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Workflow Manager</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .navbar-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .app-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+        }
+        
+        .add-client-button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .add-client-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .board {
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .columns-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+        
+        .column {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 16px;
+            min-height: 400px;
+        }
+        
+        .column-todo {
+            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+            border: 2px solid #90CAF9;
+        }
+        
+        .column-in-progress {
+            background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+            border: 2px solid #FFB74D;
+        }
+        
+        .column-completed {
+            background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+            border: 2px solid #81C784;
+        }
+        
+        .column-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .column-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .client-count {
+            background: rgba(255, 255, 255, 0.8);
+            color: #333;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            min-width: 20px;
+            text-align: center;
+        }
+        
+        .client-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 12px;
+            padding: 16px;
+            cursor: grab;
+            transition: all 0.2s ease;
+        }
+        
+        .client-card:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .client-card:active {
+            cursor: grabbing;
+        }
+        
+        .client-card.dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+        }
+        
+        .column.drag-over {
+            background: rgba(255, 255, 255, 0.8);
+            border: 3px dashed #007bff;
+            transform: scale(1.02);
+        }
+        
+        .client-name {
+            font-weight: 600;
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .client-dates {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .completed-date {
+            color: #28a745;
+            font-weight: 500;
+        }
+        
+        .client-notes {
+            font-size: 13px;
+            color: #777;
+            font-style: italic;
+            margin-top: 8px;
+            padding: 8px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border-left: 3px solid #007bff;
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        
+        .modal {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px 16px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .close-button {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #666;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+        }
+        
+        .close-button:hover {
+            background: #f0f0f0;
+        }
+        
+        .modal-form {
+            padding: 24px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s ease;
+            box-sizing: border-box;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .modal-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .cancel-button,
+        .save-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .cancel-button {
+            background: #f8f9fa;
+            color: #666;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .cancel-button:hover {
+            background: #e9ecef;
+        }
+        
+        .save-button {
+            background: #007bff;
+            color: white;
+        }
+        
+        .save-button:hover {
+            background: #0056b3;
+        }
+        
+        .empty-column {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            color: #999;
+            font-style: italic;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 8px;
+            border: 2px dashed rgba(0, 0, 0, 0.2);
+        }
+        
+        @media (max-width: 768px) {
+            .columns-container {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            
+            .navbar-content {
+                flex-direction: column;
+                gap: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <h1 class="app-title">Client Workflow Manager</h1>
+            <button class="add-client-button" onclick="openAddModal()">
+                + Add Client
+            </button>
+        </div>
+    </nav>
+
+    <div class="board">
+        <div class="columns-container">
+            <div class="column column-todo" data-status="todo">
+                <div class="column-header">
+                    <h3 class="column-title">To Do</h3>
+                    <span class="client-count" id="todo-count">0</span>
+                </div>
+                <div class="column-content" id="todo-column" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
+                    <div class="empty-column">
+                        <p>No clients yet</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="column column-in-progress" data-status="in-progress">
+                <div class="column-header">
+                    <h3 class="column-title">In Progress</h3>
+                    <span class="client-count" id="in-progress-count">0</span>
+                </div>
+                <div class="column-content" id="in-progress-column" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
+                    <div class="empty-column">
+                        <p>No clients yet</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="column column-completed" data-status="completed">
+                <div class="column-header">
+                    <h3 class="column-title">Completed</h3>
+                    <span class="client-count" id="completed-count">0</span>
+                </div>
+                <div class="column-content" id="completed-column" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
+                    <div class="empty-column">
+                        <p>No clients yet</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Client Modal -->
+    <div class="modal-overlay" id="addModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Add New Client</h2>
+                <button class="close-button" onclick="closeAddModal()">×</button>
+            </div>
+            <form class="modal-form" onsubmit="addClient(event)">
+                <div class="form-group">
+                    <label for="clientName">Client Name *</label>
+                    <input type="text" id="clientName" name="name" required placeholder="Enter client name">
+                </div>
+                <div class="form-group">
+                    <label for="receivedDate">Received Date *</label>
+                    <input type="date" id="receivedDate" name="receivedDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="notes">Notes (optional)</label>
+                    <textarea id="notes" name="notes" placeholder="Add any additional notes..." rows="3"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="cancel-button" onclick="closeAddModal()">Cancel</button>
+                    <button type="submit" class="save-button">Add Client</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Simple client management
+        let clients = JSON.parse(localStorage.getItem('clients') || '[]');
+        let editingClientId = null;
+        let draggedElement = null;
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set today's date as default
+            document.getElementById('receivedDate').value = new Date().toISOString().split('T')[0];
+            renderClients();
+        });
+
+        function openAddModal() {
+            document.getElementById('addModal').style.display = 'flex';
+            document.getElementById('clientName').focus();
+        }
+
+        function closeAddModal() {
+            document.getElementById('addModal').style.display = 'none';
+            document.querySelector('#addModal form').reset();
+            document.getElementById('receivedDate').value = new Date().toISOString().split('T')[0];
+            editingClientId = null;
+        }
+
+        function addClient(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const client = {
+                id: Date.now().toString(),
+                name: formData.get('name'),
+                receivedDate: formData.get('receivedDate'),
+                completedDate: null,
+                status: 'todo',
+                notes: formData.get('notes') || ''
+            };
+
+            clients.push(client);
+            saveClients();
+            renderClients();
+            closeAddModal();
+        }
+
+        function deleteClient(id) {
+            if (confirm('Are you sure you want to delete this client?')) {
+                clients = clients.filter(client => client.id !== id);
+                saveClients();
+                renderClients();
+            }
+        }
+
+        function moveClient(id, newStatus) {
+            const client = clients.find(c => c.id === id);
+            if (client) {
+                client.status = newStatus;
+                // Auto-set completion date if moved to completed
+                if (newStatus === 'completed' && !client.completedDate) {
+                    client.completedDate = new Date().toISOString().split('T')[0];
+                } else if (newStatus !== 'completed') {
+                    client.completedDate = null;
+                }
+                saveClients();
+                renderClients();
+            }
+        }
+
+        function saveClients() {
+            localStorage.setItem('clients', JSON.stringify(clients));
+        }
+
+        function renderClients() {
+            const columns = {
+                'todo': document.getElementById('todo-column'),
+                'in-progress': document.getElementById('in-progress-column'),
+                'completed': document.getElementById('completed-column')
+            };
+
+            const counts = {
+                'todo': 0,
+                'in-progress': 0,
+                'completed': 0
+            };
+
+            // Clear all columns
+            Object.values(columns).forEach(column => {
+                column.innerHTML = '';
+            });
+
+            // Add clients to appropriate columns
+            clients.forEach(client => {
+                counts[client.status]++;
+                const card = createClientCard(client);
+                columns[client.status].appendChild(card);
+            });
+
+            // Update counts
+            document.getElementById('todo-count').textContent = counts.todo;
+            document.getElementById('in-progress-count').textContent = counts['in-progress'];
+            document.getElementById('completed-count').textContent = counts.completed;
+
+            // Show empty state if no clients
+            Object.keys(columns).forEach(status => {
+                if (counts[status] === 0) {
+                    const emptyDiv = document.createElement('div');
+                    emptyDiv.className = 'empty-column';
+                    emptyDiv.innerHTML = '<p>No clients yet</p>';
+                    columns[status].appendChild(emptyDiv);
+                }
+            });
+        }
+
+        function createClientCard(client) {
+            const card = document.createElement('div');
+            card.className = 'client-card';
+            card.draggable = true;
+            card.dataset.clientId = client.id;
+            
+            // Add drag event listeners
+            card.addEventListener('dragstart', handleDragStart);
+            card.addEventListener('dragend', handleDragEnd);
+            
+            const formatDate = (dateString) => {
+                if (!dateString) return '';
+                const date = new Date(dateString);
+                return date.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+            };
+
+            card.innerHTML = `
+                <div class="client-name">${client.name}</div>
+                <div class="client-dates">
+                    <div>Received on: ${formatDate(client.receivedDate)}</div>
+                    ${client.completedDate ? `<div class="completed-date">Completed on: ${formatDate(client.completedDate)}</div>` : ''}
+                </div>
+                ${client.notes ? `<div class="client-notes">${client.notes}</div>` : ''}
+                <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button onclick="deleteClient('${client.id}')" style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Delete</button>
+                    ${client.status !== 'completed' ? `<button onclick="moveClient('${client.id}', 'completed')" style="background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Complete</button>` : ''}
+                    ${client.status !== 'in-progress' ? `<button onclick="moveClient('${client.id}', 'in-progress')" style="background: #ffc107; color: #333; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Move to Progress</button>` : ''}
+                    ${client.status !== 'todo' ? `<button onclick="moveClient('${client.id}', 'todo')" style="background: #007bff; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Move to Todo</button>` : ''}
+                </div>
+            `;
+
+            return card;
+        }
+
+        // Drag and Drop Functions
+        function handleDragStart(e) {
+            draggedElement = e.target;
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', e.target.outerHTML);
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            draggedElement = null;
+            
+            // Remove all drag-over classes
+            document.querySelectorAll('.column').forEach(el => {
+                el.classList.remove('drag-over');
+            });
+        }
+
+        function allowDrop(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            
+            // Add visual feedback
+            const columnContent = e.currentTarget;
+            const column = columnContent.closest('.column');
+            column.classList.add('drag-over');
+        }
+
+        function dragLeave(e) {
+            // Only remove drag-over if we're leaving the column entirely
+            if (!e.currentTarget.contains(e.relatedTarget)) {
+                const column = e.currentTarget.closest('.column');
+                column.classList.remove('drag-over');
+            }
+        }
+
+        function drop(e) {
+            e.preventDefault();
+            
+            const columnContent = e.currentTarget;
+            const column = columnContent.closest('.column');
+            const newStatus = column.dataset.status;
+            
+            console.log('Drop event triggered:', { newStatus, draggedElement }); // Debug log
+            
+            if (draggedElement && draggedElement.dataset.clientId) {
+                const clientId = draggedElement.dataset.clientId;
+                console.log('Moving client:', clientId, 'to status:', newStatus); // Debug log
+                moveClient(clientId, newStatus);
+            }
+            
+            // Remove visual feedback
+            column.classList.remove('drag-over');
+        }
+
+        // Add some sample data on first visit
+        if (clients.length === 0) {
+            clients = [
+                {
+                    id: '1',
+                    name: 'Alice Jackson',
+                    receivedDate: '2024-04-10',
+                    completedDate: null,
+                    status: 'todo',
+                    notes: ''
+                },
+                {
+                    id: '2',
+                    name: 'Michael Brown',
+                    receivedDate: '2024-04-11',
+                    completedDate: null,
+                    status: 'in-progress',
+                    notes: 'Working on initial requirements'
+                },
+                {
+                    id: '3',
+                    name: 'Robert Williams',
+                    receivedDate: '2024-04-09',
+                    completedDate: '2024-04-15',
+                    status: 'completed',
+                    notes: 'Project delivered successfully'
+                }
+            ];
+            saveClients();
+            renderClients();
+        }
+    </script>
+</body>
+</html>
