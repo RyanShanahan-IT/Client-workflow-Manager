@@ -22,7 +22,7 @@ A modern, responsive web application for managing client workflows using a Kanba
 
 ## Live Demo
 
-Visit the live application at: [Your Netlify URL will go here]
+Visit the live application at: 
 
 ## Tech Stack
 
@@ -31,18 +31,9 @@ Visit the live application at: [Your Netlify URL will go here]
 - **localStorage** for data persistence
 - **Responsive design** with CSS Grid and Flexbox
 
-## Deployment
-
-This application is deployed on Netlify and automatically updates when changes are pushed to the main branch.
 
 ## Browser Compatibility
 
 - ✅ Chrome, Firefox, Safari, Edge
 - ✅ Mobile browsers (iOS Safari, Chrome Mobile)
 - ✅ Works on tablets and phones
-
-## Color Scheme
-
-- **To Do**: Soft blue tones (#E3F2FD)
-- **In Progress**: Warm yellow/orange tones (#FFF3E0)
-- **Completed**: Calm green tones (#E8F5E9)
